@@ -117,7 +117,7 @@
       -export
       -name {{ item }}
       -out private/{{ item }}.p12
-      -passout pass:"{{ easyrsa_p12_export_password }}"
+      # -passout pass:"{{ easyrsa_p12_export_password }}"
     args:
       chdir: "configs/{{ IP_subject_alt_name }}/pki/"
       executable: bash
