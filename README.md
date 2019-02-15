@@ -4,7 +4,7 @@
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/fold_left.svg?style=social&label=Follow%20%40AlgoVPN)](https://twitter.com/AlgoVPN)
 [![TravisCI Status](https://api.travis-ci.org/trailofbits/algo.svg?branch=master)](https://travis-ci.org/trailofbits/algo)
 
-Algo VPN is a set of Ansible scripts that simplify the setup of a personal IPSEC VPN. It uses the most secure defaults available, works with common cloud providers, and does not require client software on most devices. See our [release announcement](https://blog.trailofbits.com/2016/12/12/meet-algo-the-vpn-that-works/) for more information.
+Algo VPN is a set of Ansible scripts that simplify the setup of a personal IPSEC and Wireguard VPN. It uses the most secure defaults available, works with common cloud providers, and does not require client software on most devices. See our [release announcement](https://blog.trailofbits.com/2016/12/12/meet-algo-the-vpn-that-works/) for more information.
 
 ## Features
 
@@ -14,7 +14,7 @@ Algo VPN is a set of Ansible scripts that simplify the setup of a personal IPSEC
 * Blocks ads with a local DNS resolver (optional)
 * Sets up limited SSH users for tunneling traffic (optional)
 * Based on current versions of Ubuntu and strongSwan
-* Installs to DigitalOcean, Amazon EC2, Vultr, Microsoft Azure, Google Compute Engine, Scaleway, OpenStack or your own Ubuntu 18.04 LTS server
+* Installs to DigitalOcean, Amazon Lightsail, Amazon EC2, Vultr, Microsoft Azure, Google Compute Engine, Scaleway, OpenStack, or your own Ubuntu 18.04 LTS server
 
 ## Anti-features
 
@@ -29,7 +29,7 @@ Algo VPN is a set of Ansible scripts that simplify the setup of a personal IPSEC
 
 The easiest way to get an Algo server running is to let it set up a _new_ virtual machine in the cloud for you.
 
-1. **Setup an account on a cloud hosting provider.** Algo supports [DigitalOcean](https://m.do.co/c/4d7f4ff9cfe4) (most user friendly), [Amazon EC2](https://aws.amazon.com/), [Vultr](https://www.vultr.com/), [Microsoft Azure](https://azure.microsoft.com/), [Google Compute Engine](https://cloud.google.com/compute/), [Scaleway](https://www.scaleway.com/) and [DreamCompute](https://www.dreamhost.com/cloud/computing/) or an OpenStack based cloud hosting.
+1. **Setup an account on a cloud hosting provider.** Algo supports [DigitalOcean](https://m.do.co/c/4d7f4ff9cfe4) (most user friendly), [Amazon Lightsail](https://aws.amazon.com/lightsail/), [Amazon EC2](https://aws.amazon.com/), [Vultr](https://www.vultr.com/), [Microsoft Azure](https://azure.microsoft.com/), [Google Compute Engine](https://cloud.google.com/compute/), [Scaleway](https://www.scaleway.com/), and [DreamCompute](https://www.dreamhost.com/cloud/computing/) or other OpenStack-based cloud hosting.
 
 2. **[Download Algo](https://github.com/trailofbits/algo/archive/master.zip).** Unzip it in a convenient location on your local machine.
 
@@ -58,7 +58,7 @@ The easiest way to get an Algo server running is to let it set up a _new_ virtua
     ```bash
     $ python -m virtualenv --python=`which python2` env &&
         source env/bin/activate &&
-        python -m pip install -U pip &&
+        python -m pip install -U pip virtualenv &&
         python -m pip install -r requirements.txt
     ```
     On macOS, you may be prompted to install `cc`. You should press accept if so.
@@ -89,11 +89,27 @@ Certificates and configuration files that users will need are placed in the `con
 
 ### Apple Devices
 
-**Send users their Apple Profile.** Find the corresponding mobileconfig (Apple Profile) for each user and send it to them over AirDrop or other secure means. Apple Configuration Profiles are all-in-one configuration files for iOS and macOS devices. On macOS, double-clicking a profile to install it will fully configure the VPN. On iOS, users are prompted to install the profile as soon as the AirDrop is accepted.
+Apple devices can connect to an Algo VPN via IPsec using their built-in IPsec support or via WireGuard by installing WireGuard client software.
 
-**Turn on the VPN.** On iOS, connect to the VPN by opening Settings and clicking the toggle next to "VPN" near the top of the list. On macOS, connect to the VPN by opening System Preferences -> Network, finding Algo VPN in the left column and clicking "Connect." On macOS, check "Show VPN status in menu bar" to easily connect and disconnect from the menu bar.
+#### Install WireGuard
 
-**Managing On-Demand VPNs.** If you enabled "On Demand", the VPN will connect automatically whenever it is able. On iOS, you can turn off "On Demand" by clicking the (i) next to the entry for Algo VPN and toggling off "Connect On Demand." On macOS, you can turn off "On Demand" by opening the Network Preferences, finding Algo VPN in the left column, and unchecking the box for "Connect on demand."
+On iOS, install the [WireGuard](https://itunes.apple.com/us/app/wireguard/id1441195209?mt=8) app from the App Store. For each user you defined, Algo generated a WireGuard configuration file `wireguard/<name>.conf` and a corresponding QR code image `wireguard/<name>.png`. Either AirDrop the configuration file to the iOS device or use the WireGuard app to scan the QR code. To use "Connect On Demand" with WireGuard enable it by editing the configuration in the WireGuard app.
+
+Until the WireGuard app for macOS is ready, installing WireGuard on macOS is a little more complicated. See [Using MacOS as a Client with WireGuard](docs/client-macos-wireguard.md).
+
+#### Configure IPsec
+
+Find the corresponding `mobileconfig` (Apple Profile) for each user and send it to them over AirDrop or other secure means. Apple Configuration Profiles are all-in-one configuration files for iOS and macOS devices. On macOS, double-clicking a profile to install it will fully configure the VPN. On iOS, users are prompted to install the profile as soon as the AirDrop is accepted.
+
+#### Enable the VPN
+
+On iOS, connect to the VPN by opening **Settings** and clicking the toggle next to "VPN" near the top of the list. If using WireGuard you can also enable the VPN from the WireGuard app. On macOS, connect to the VPN by opening **System Preferences** -> **Network**, finding the Algo VPN in the left column, and clicking "Connect." Check "Show VPN status in menu bar" to easily connect and disconnect from the menu bar.
+
+#### Managing "Connect On Demand"
+
+If you enabled "Connect On Demand" the VPN will connect automatically whenever it is able. Most Apple users will want to enable "Connect On Demand", but if you do then simply disabling the VPN will not cause it to stay disabled; it will just "Connect On Demand" again. To disable the VPN you'll need to disable "Connect On Demand".
+
+On iOS, you can turn off "Connect On Demand" in **Settings** by clicking the (i) next to the entry for your Algo VPN and toggling off "Connect On Demand." On macOS, you can turn off "Connect On Demand" by opening **System Preferences** -> **Network**, finding the Algo VPN in the left column, unchecking the box for "Connect on demand", and clicking Apply.
 
 ### Android Devices
 
@@ -118,7 +134,7 @@ Install strongSwan, then copy the included ipsec_user.conf, ipsec_user.secrets, 
 
 #### Ubuntu Server 18.04 example
 
-1. `sudo apt-get install strongswan strongswan-plugin-openssl`: install strongSwan
+1. `sudo apt-get install strongswan libstrongswan-standard-plugins`: install strongSwan
 2. `/etc/ipsec.d/certs`: copy `<name>.crt` from `algo-master/configs/<server_ip>/pki/certs/<name>.crt`
 3. `/etc/ipsec.d/private`: copy `<name>.key` from `algo-master/configs/<server_ip>/pki/private/<name>.key`
 4. `/etc/ipsec.d/cacerts`: copy `cacert.pem` from `algo-master/configs/<server_ip>/pki/cacert.pem`
@@ -132,10 +148,12 @@ One common use case is to let your server access your local LAN without going th
 
     conn lan-passthrough
     leftsubnet=192.168.1.1/24 # Replace with your LAN subnet
-    rightsubnet=192.168.1.1/24 # Replac with your LAND subnet
+    rightsubnet=192.168.1.1/24 # Replace with your LAN subnet
     authby=never # No authentication necessary
     type=pass # passthrough
     auto=route # no need to ipsec up lan-passthrough
+
+To configure the connection to come up at boot time replace `auto=add` with `auto=start`.
 
 ### Other Devices
 
@@ -144,7 +162,6 @@ Depending on the platform, you may need one or multiple of the following files.
 * cacert.pem: CA Certificate
 * user.mobileconfig: Apple Profile
 * user.p12: User Certificate and Private Key (in PKCS#12 format)
-* user.sswan: Android strongSwan Profile
 * ipsec_user.conf: strongSwan client configuration
 * ipsec_user.secrets: strongSwan client configuration
 * windows_user.ps1: Powershell script to help setup a VPN connection on Windows
@@ -171,13 +188,13 @@ Note the admin username is `ubuntu` instead of `root` on providers other than Di
 
 ## Adding or Removing Users
 
-If you chose the save the CA certificate during the deploy process, then Algo's own scripts can easily add and remove users from the VPN server.
+If you chose to save the CA certificate during the deploy process, then Algo's own scripts can easily add and remove users from the VPN server.
 
 1. Update the `users` list in your `config.cfg`
 2. Open a terminal, `cd` to the algo directory, and activate the virtual environment with `source env/bin/activate`
 3. Run the command: `./algo update-users`
 
-After this process completes, the Algo VPN server will contains only the users listed in the `config.cfg` file.
+After this process completes, the Algo VPN server will contain only the users listed in the `config.cfg` file.
 
 ## Additional Documentation
 
@@ -195,6 +212,7 @@ After this process completes, the Algo VPN server will contains only the users l
   - Configure [Amazon EC2](docs/cloud-amazon-ec2.md)
   - Configure [Azure](docs/cloud-azure.md)
   - Configure [DigitalOcean](docs/cloud-do.md)
+  - Configure [Google Cloud Platform](docs/cloud-gce.md)
 * Advanced Deployment
   - Deploy to your own [FreeBSD](docs/deploy-to-freebsd.md) server
   - Deploy to your own [Ubuntu 18.04](docs/deploy-to-ubuntu.md) server

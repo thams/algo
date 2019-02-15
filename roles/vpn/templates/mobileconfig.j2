@@ -12,8 +12,8 @@
                 <integer>1</integer>
               <key>OnDemandRules</key>
               <array>
-{% if algo_ondemand_wifi_exclude != '_null' %}
-{% set WIFI_EXCLUDE_LIST = (algo_ondemand_wifi_exclude|string).split(',') %}
+{% if algo_ondemand_wifi_exclude|b64decode != '_null' %}
+{% set WIFI_EXCLUDE_LIST = (algo_ondemand_wifi_exclude|b64decode|string).split(',') %}
                   <dict>
                       <key>Action</key>
                       <string>Disconnect</string>
@@ -134,6 +134,8 @@
             <string>IKEv2</string>
         </dict>
         <dict>
+            <key>Password</key>
+            <string>{{ p12_export_password }}</string>
             <key>PayloadCertificateFileName</key>
             <string>{{ item.0 }}.p12</string>
             <key>PayloadContent</key>
@@ -178,6 +180,8 @@
     <string>{{ IP_subject_alt_name }} IKEv2</string>
     <key>PayloadIdentifier</key>
     <string>donut.local.{{ 500000 | random | to_uuid | upper }}</string>
+    <key>PayloadOrganization</key>
+	<string>Algo VPN</string>
     <key>PayloadRemovalDisallowed</key>
     <false/>
     <key>PayloadType</key>

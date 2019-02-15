@@ -17,6 +17,8 @@ First of all, check [this](https://github.com/trailofbits/algo#features) and ens
      * [DigitalOcean: error tagging resource 'xxxxxxxx': param is missing or the value is empty: resources](#digitalocean-error-tagging-resource)
      * [Windows: The value of parameter linuxConfiguration.ssh.publicKeys.keyData is invalid](#windows-the-value-of-parameter-linuxconfigurationsshpublickeyskeydata-is-invalid)
      * [Docker: Failed to connect to the host via ssh](#docker-failed-to-connect-to-the-host-via-ssh)
+     * [Wireguard: Unable to find 'configs/...' in expected paths](#wireguard-unable-to-find-configs-in-expected-paths)
+     * [Ubuntu Error: "unable to write 'random state" when generating CA password](#ubuntu-error-unable-to-write-random-state-when-generating-ca-password")
   * [Connection Problems](#connection-problems)
      * [I'm blocked or get CAPTCHAs when I access certain websites](#im-blocked-or-get-captchas-when-i-access-certain-websites)
      * [I want to change the list of trusted Wifi networks on my Apple device](#i-want-to-change-the-list-of-trusted-wifi-networks-on-my-apple-device)
@@ -123,6 +125,22 @@ You tried to install Algo and you see an error that reads "ansible-playbook: com
 
 You did not finish step 4 in the installation instructions, "[Install Algo's remaining dependencies](https://github.com/trailofbits/algo#deploy-the-algo-server)." Algo depends on [Ansible](https://github.com/ansible/ansible), an automation framework, and this error indicates that you do not have Ansible installed. Ansible is installed by `pip` when you run `python -m pip install -r requirements.txt`. You must complete the installation instructions to run the Algo server deployment process.
 
+### Could not fetch URL ... TLSV1_ALERT_PROTOCOL_VERSION
+
+You tried to install Algo and you received an error like this one:
+
+```
+Could not fetch URL https://pypi.python.org/simple/secretstorage/: There was a problem confirming the ssl certificate: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:590) - skipping
+  Could not find a version that satisfies the requirement SecretStorage<3 (from -r requirements.txt (line 2)) (from versions: )
+No matching distribution found for SecretStorage<3 (from -r requirements.txt (line 2))
+```
+
+It's time to upgrade your python.
+
+`brew upgrade python2`
+
+You can also download python 2.7.x from python.org.
+
 ### Bad owner or permissions on .ssh
 
 You tried to run Algo and it quickly exits with an error about a bad owner or permissions:
@@ -171,6 +189,17 @@ Algo builds a [Cloudformation](https://aws.amazon.com/cloudformation/) template 
 
 In many cases, failed deployments are the result of [service limits](http://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html) being reached, such as "CREATE_FAILED	AWS::EC2::VPC	VPC	The maximum number of VPCs has been reached." In these cases, you must either [delete the VPCs from previous deployments](https://docs.aws.amazon.com/AmazonVPC/latest/UserGuide/working-with-vpcs.html#VPC_Deleting), or [contact AWS support](https://console.aws.amazon.com/support/home?region=us-east-1#/case/create?issueType=service-limit-increase&limitType=service-code-direct-connect) to increase the limits on your account.
 
+### AWS: not authorized to perform: cloudformation:UpdateStack
+
+You tried to deploy Algo to AWS and you received an error like this one:
+
+```
+TASK [cloud-ec2 : Deploy the template] *****************************************
+fatal: [localhost]: FAILED! => {"changed": false, "failed": true, "msg": "User: arn:aws:iam::082851645362:user/algo is not authorized to perform: cloudformation:UpdateStack on resource: arn:aws:cloudformation:us-east-1:082851645362:stack/algo/*"}
+```
+
+This error indicates you already have Algo deployed to Cloudformation. Need to [delete it](cloud-amazon-ec2.md#cleanup) first, then re-deploy.
+
 ### DigitalOcean: error tagging resource
 
 You tried to deploy Algo to DigitalOcean and you received an error like this one:
@@ -205,22 +234,6 @@ Target: linuxConfiguration.ssh.publicKeys.keyData"}
 
 This is related to [the chmod issue](https://github.com/Microsoft/WSL/issues/81) inside /mnt directory which is NTFS. The fix is to place Algo outside of /mnt directory.
 
-### Could not fetch URL ... TLSV1_ALERT_PROTOCOL_VERSION
-
-You tried to install Algo and you received an error like this one:
-
-```
-Could not fetch URL https://pypi.python.org/simple/secretstorage/: There was a problem confirming the ssl certificate: [SSL: TLSV1_ALERT_PROTOCOL_VERSION] tlsv1 alert protocol version (_ssl.c:590) - skipping
-  Could not find a version that satisfies the requirement SecretStorage<3 (from -r requirements.txt (line 2)) (from versions: )
-No matching distribution found for SecretStorage<3 (from -r requirements.txt (line 2))
-```
-
-It's time to upgrade your python
-
-`brew upgrade python2`
-
-You can also download python 2.7.x from python.org
-
 ### Docker: Failed to connect to the host via ssh
 
 You tried to deploy Algo from Docker and you received an error like this one:
@@ -239,16 +252,39 @@ You need to add the following to the ansible.cfg in repo root:
 control_path_dir=/dev/shm/ansible_control_path
 ```
 
-### AWS: not authorized to perform: cloudformation:UpdateStack
+### Wireguard: Unable to find 'configs/...' in expected paths
 
-You tried to deploy Algo to AWS and you received an error like this one:
+You tried to run Algo and you received an error like this one:
 
 ```
-TASK [cloud-ec2 : Deploy the template] *****************************************
-fatal: [localhost]: FAILED! => {"changed": false, "failed": true, "msg": "User: arn:aws:iam::082851645362:user/algo is not authorized to perform: cloudformation:UpdateStack on resource: arn:aws:cloudformation:us-east-1:082851645362:stack/algo/*"}
+TASK [wireguard : Generate public keys] ********************************************************************************
+[WARNING]: Unable to find 'configs/xxx.xxx.xxx.xxx/wireguard//private/dan' in expected paths.
+
+fatal: [localhost]: FAILED! => {"msg": "An unhandled exception occurred while running the lookup plugin 'file'. Error was a <class 'ansible.errors.AnsibleError'>, original message: could not locate file in lookup: configs/xxx.xxx.xxx.xxx/wireguard//private/dan"}
+``` 
+This error is usually hit when using the local install option on a server that isn't Ubuntu 18.04. You should upgrade your server to Ubuntu 18.04. If this doesn't work, try removing `*.lock` files at /etc/wireguard/ as follows:
+
+```ssh
+sudo rm -rf /etc/wireguard/*.lock
+```
+Then immediately re-run `./algo`.
+
+### Ubuntu Error: "unable to write 'random state" when generating CA password
+
+When running Algo, you received an error like this:
+
+```
+TASK [common : Generate password for the CA key] ***********************************************************************************************************************************************************
+fatal: [xxx.xxx.xxx.xxx -> localhost]: FAILED! => {"changed": true, "cmd": "openssl rand -hex 16", "delta": "0:00:00.024776", "end": "2018-11-26 13:13:55.879921", "msg": "non-zero return code", "rc": 1, "start": "2018-11-26 13:13:55.855145", "stderr": "unable to write 'random state'", "stderr_lines": ["unable to write 'random state'"], "stdout": "xxxxxxxxxxxxxxxxxxx", "stdout_lines": ["xxxxxxxxxxxxxxxxxxx"]}
 ```
 
-This error indicates you already have Algo deployed to Cloudformation. Need to [delete it](cloud-amazon-ec2.md#cleanup) first, then re-deploy.
+This happens when your user does not have ownership of the `$HOME/.rnd` file, which is a seed for randomization. To fix this issue, give your user ownership of the file with this command:
+
+```
+sudo chown $USER:$USER $HOME/.rnd
+```
+
+Now, run Algo again.
 
 ## Connection Problems
 
@@ -284,22 +320,80 @@ You're trying to connect Ubuntu or Debian to the Algo server through the Network
 
 ### Various websites appear to be offline through the VPN
 
-This issue appears intermittently due to issues with MTU size. Different networks may require the MTU within a specific range to correctly pass traffic. We made an effort to set the MTU to the most conservative, most compatible size by default but problems may still occur.
+This issue appears occasionally due to issues with [MTU](https://en.wikipedia.org/wiki/Maximum_transmission_unit) size. Different networks may require the MTU to be within a specific range to correctly pass traffic. We made an effort to set the MTU to the most conservative, most compatible size by default but problems may still occur.
 
-Advanced users can troubleshoot the correct MTU size by retrying `ping` with the "don't fragment" bit set, then decreasing packet size until it works. This will determine the correct MTU size for your network, which you then need to update on your network adapter.
+If either your Internet service provider or your chosen cloud service provider use an MTU smaller than the normal value of 1500 you can use the `reduce_mtu` option in the file `config.cfg` to correspondingly reduce the size of the VPN tunnels created by Algo. Algo will attempt to automatically set `reduce_mtu` based on the MTU found on the server at the time of deployment, but it cannot detect if the MTU is smaller on the client side of the connection.
 
-E.g., On Linux (client -- Ubuntu 18.04), connect to your IPsec tunnel then use the following commands to determine the correct MTU size:
-```
-$ ping -M do -s 1500 www.google.com
-PING www.google.com (74.125.22.147) 1500(1528) bytes of data.
-ping: local error: Message too long, mtu=1438
-```
-Then, set the MTU size on your network adapter (wlan0 or eth0):
-```
-$ sudo ifconfig wlan0 mtu 1438
-```
+If you change `reduce_mtu` you'll need to deploy a new Algo VPN.
 
-You can also set the `max_mss` variable to a new value in config.cfg, and then redeploy your server rather than reconfigure the current one in-place.
+To determine the value for `reduce_mtu` you should examine the MTU on your Algo VPN server's primary network interface (see below). You might algo want to run tests using `ping`, both on a local client *when not connected to the VPN* and also on your Algo VPN server (see below). Then take the smallest MTU you find (local or server side), subtract it from 1500, and use that for `reduce_mtu`. An exception to this is if you find the smallest MTU is your local MTU at 1492, typical for PPPoE connections, then no MTU reduction should be necessary.
+
+#### Check the MTU on the Algo VPN server
+
+To check the MTU on your server, SSH in to it, run the command `ifconfig`, and look for the MTU of the main network interface. For example:
+```
+ens4: flags=4163<UP,BROADCAST,RUNNING,MULTICAST>  mtu 1460
+```
+The MTU shown here is 1460 instead of 1500. Therefore set `reduce_mtu: 40` in `config.cfg`. Algo should do this automatically.
+
+#### Determine the MTU using `ping`
+
+When using `ping` you increase the payload size with the "Don't Fragment" option set until it fails. The largest payload size that works, plus the `ping` overhead of 28, is the MTU of the connection.
+
+##### Example: Test on your Algo VPN server (Ubuntu)
+```
+$ ping -4 -s 1432 -c 1 -M do github.com
+PING github.com (192.30.253.112) 1432(1460) bytes of data.
+1440 bytes from lb-192-30-253-112-iad.github.com (192.30.253.112): icmp_seq=1 ttl=53 time=13.1 ms
+
+--- github.com ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 13.135/13.135/13.135/0.000 ms
+
+$ ping -4 -s 1433 -c 1 -M do github.com
+PING github.com (192.30.253.113) 1433(1461) bytes of data.
+ping: local error: Message too long, mtu=1460
+
+--- github.com ping statistics ---
+1 packets transmitted, 0 received, +1 errors, 100% packet loss, time 0ms
+```
+In this example the largest payload size that works is 1432. The `ping` overhead is 28 so the MTU is 1432 + 28 = 1460, which is 40 lower than the normal MTU of 1500. Therefore set `reduce_mtu: 40` in `config.cfg`.
+
+##### Example: Test on a macOS client *not connected to your Algo VPN*
+```
+$ ping -c 1 -D -s 1464 github.com
+PING github.com (192.30.253.113): 1464 data bytes
+1472 bytes from 192.30.253.113: icmp_seq=0 ttl=50 time=169.606 ms
+
+--- github.com ping statistics ---
+1 packets transmitted, 1 packets received, 0.0% packet loss
+round-trip min/avg/max/stddev = 169.606/169.606/169.606/0.000 ms
+
+$ ping -c 1 -D -s 1465 github.com
+PING github.com (192.30.253.113): 1465 data bytes
+
+--- github.com ping statistics ---
+1 packets transmitted, 0 packets received, 100.0% packet loss
+```
+In this example the largest payload size that works is 1464. The `ping` overhead is 28 so the MTU is 1464 + 28 = 1492, which is typical for a PPPoE Internet connection and does not require an MTU adjustment. Therefore use the default of `reduce_mtu: 0` in `config.cfg`.
+
+#### Change the client MTU without redeploying the Algo VPN
+
+If you don't wish to deploy a new Algo VPN (which is required to incorporate a change to `reduce_mtu`) you can change the client side MTU of WireGuard clients and Linux IPsec clients without needing to make changes to your Algo VPN.
+
+For WireGuard on Linux, or macOS (when installed with `brew`), you can specify the MTU yourself in the client configuration file (typically `wg0.conf`). Refer to the documentation (see `man wg-quick`).
+
+For WireGuard on iOS and Android you can change the MTU in the app.
+
+For IPsec on Linux you can change the MTU of your network interface to match the required MTU. For example:
+```
+sudo ifconfig eth0 mtu 1440
+```
+To make the change take affect after a reboot, on Ubuntu 18.04 and later edit the relevant file in the `/etc/netplan` directory (see `man netplan`).
+
+#### Note for WireGuard iOS users
+
+As of WireGuard for iOS 0.0.20190107 the default MTU is 1280, a conservative value intended to allow mobile devices to continue to work as they switch between different networks which might have smaller than normal MTUs. In order to use this default MTU review the configuration in the WireGuard app and remove any value for MTU that might have been added automatically by Algo.
 
 ### Clients appear stuck in a reconnection loop
 
@@ -349,7 +443,7 @@ python2.7 -m virtualenv --python=`which python2.7` env && source env/bin/activat
 The problem may happen if you recently moved to a new server, where you have Algo VPN.
 
 1. Clear the Networking caches:
-	- Run CDM (click windows start menu, type 'cmd', right click on 'Command Prompt' and select "Run as Administrator").
+	- Run CMD (click windows start menu, type 'cmd', right click on 'Command Prompt' and select "Run as Administrator").
 	- Type the commands below:
 	```
 	netsh int ip reset
