@@ -13,7 +13,7 @@
 - name: Build the mobileconfigs
   template:
     src: mobileconfig.j2
-    dest: "{{ ipsec_config_path }}/apple/{{ item.0 }}.mobileconfig"
+    dest: "configs/userfiles/{{ algo_server_name }}.{{ item.0 }}.mobileconfig"
     mode: 0600
   with_together:
     - "{{ users }}"
@@ -39,7 +39,7 @@
 - name: Build the windows client powershell script
   template:
     src: client_windows.ps1.j2
-    dest: "{{ ipsec_config_path }}/windows/{{ item.0 }}.ps1"
+    dest: "configs/userfiles/{{ algo_server_name}}.{{ item.0 }}.ps1"
     mode: 0600
   when: algo_windows
   with_together:
