@@ -37,6 +37,14 @@
       - windows
       - manual
 
+  - name: Ensure the simple config directory exists
+    file:
+      dest: "configs/userfiles"
+      state: directory
+      recurse: yes
+      mode: '0700'
+
+
   - name: Ensure the files exist
     file:
       dest: "{{ ipsec_pki_path }}/{{ item }}"
