@@ -39,7 +39,7 @@
 
   - name: Ensure the simple config directory exists
     file:
-      dest: "configs/userfiles"
+      dest: "configs/userfiles/{{ algo_server_name }}"
       state: directory
       recurse: yes
       mode: '0700'
